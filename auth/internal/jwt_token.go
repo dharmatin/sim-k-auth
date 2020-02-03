@@ -1,4 +1,4 @@
-package token
+package internal
 
 import (
 	"errors"
@@ -8,10 +8,12 @@ import (
 	jwt "github.com/dgrijalva/jwt-go"
 )
 
-var APPLICATION_NAME = "SIM-K Authentication Service"
-var LOGIN_EXPIRATION_DURATION = time.Duration(1) * time.Hour
-var JWT_SIGNING_METHOD = jwt.SigningMethodHS256
-var JWT_SIGNATURE_KEY = []byte(os.Getenv("JWT_SIGNATURE"))
+var (
+	ApplicationName         = "SIM-K Authentication Service"
+	LoginExpirationDuration = time.Duration(1) * time.Hour
+	JwtSigningMethod        = jwt.SigningMethodHS256
+	JwtSignatureKey         = []byte(os.Getenv(("JWT_SIGNATURE_KEY")))
+)
 
 type Claims struct {
 	jwt.StandardClaims
@@ -36,19 +38,28 @@ var (
 
 func (t *jwtToken) NewWithClaims(claims Claims) error {
 	if claims == (Claims{}) {
-		return errors.New("Claim not empty")
+		return errors.New("Claims not empty")
 	}
-	t.Token = jwt.NewWithClaims(JWT_SIGNING_METHOD, claims)
+	claims = Claims{
+		StandardClaims: jwt.StandardClaims{
+			Issuer:    ApplicationName,
+			ExpiresAt: time.Now().Add(LoginExpirationDuration).Unix(),
+		},
+		Username: claims.Username,
+		Email:    claims.Email,
+		Group:    claims.Group,
+	}
+	t.Token = jwt.NewWithClaims(JwtSigningMethod, claims)
 	return nil
 }
 
 func (t *jwtToken) SignedString() (string, error) {
-	return t.Token.SignedString(JWT_SIGNATURE_KEY)
+	return t.Token.SignedString(JwtSignatureKey)
 }
 
 func (t jwtToken) ParseWithClaims(tokenString string) (*Claims, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &Claims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(JWT_SIGNATURE_KEY), nil
+		return []byte(JwtSignatureKey), nil
 	})
 	if err == nil {
 		if claims, ok := token.Claims.(*Claims); ok && token.Valid {

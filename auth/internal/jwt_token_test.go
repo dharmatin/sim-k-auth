@@ -1,4 +1,4 @@
-package token
+package internal
 
 import (
 	"errors"
@@ -20,7 +20,7 @@ func TestNewWithClaims(t *testing.T) {
 		{
 			Claims{},
 			nil,
-			errors.New("Claim not empty"),
+			errors.New("Claims not empty"),
 		},
 		{
 			Claims{
