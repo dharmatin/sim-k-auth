@@ -11,12 +11,9 @@ type AuthRequest struct {
 	Group    string
 }
 
-type AuthResponse struct {
-}
-
 type AuthInterface interface {
 	GenerateToken(AuthRequest) (string, rest_error.RestError)
-	GetTokenInfo(string) (*AuthResponse, rest_error.RestError)
+	GetTokenInfo(string) (*internal.Claims, rest_error.RestError)
 }
 type auth struct {
 	jwtToken internal.JWTTokenInterface
@@ -48,6 +45,10 @@ func (a auth) GenerateToken(request AuthRequest) (string, rest_error.RestError) 
 	return signedToken, nil
 }
 
-func (a auth) GetTokenInfo(token string) (*AuthResponse, rest_error.RestError) {
-	return nil, nil
+func (a auth) GetTokenInfo(token string) (*internal.Claims, rest_error.RestError) {
+	result, err := a.jwtToken.ParseWithClaims(token)
+	if err != nil {
+		return nil, rest_error.NewUnauthorizedError(err.Error())
+	}
+	return result, nil
 }
